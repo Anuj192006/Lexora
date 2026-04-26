@@ -11,7 +11,7 @@ function App() {
   const [showConfetti, setShowConfetti] = useState(false)
   const [guessCount, setGuessCount] = useState(0)
 
-  const API_BASE = 'http://localhost:8000'
+  const API_BASE = 'https://lexora-tzoz.onrender.com'
 
   const startNewGame = async () => {
     try {
