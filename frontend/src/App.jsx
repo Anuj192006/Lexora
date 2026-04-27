@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import GameContainer from './components/GameContainer'
 import BackgroundAnimation from './components/BackgroundAnimation'
@@ -10,10 +10,28 @@ function App() {
   const [gameData, setGameData] = useState(null)
   const [showConfetti, setShowConfetti] = useState(false)
   const [guessCount, setGuessCount] = useState(0)
+  const [isStarting, setIsStarting] = useState(false)
+  const [startupElapsed, setStartupElapsed] = useState(0)
 
   const API_BASE = 'https://lexora-tzoz.onrender.com'
 
+  useEffect(() => {
+    if (!isStarting) {
+      setStartupElapsed(0)
+      return
+    }
+
+    const interval = window.setInterval(() => {
+      setStartupElapsed((prev) => prev + 1)
+    }, 1000)
+
+    return () => window.clearInterval(interval)
+  }, [isStarting])
+
   const startNewGame = async () => {
+    if (isStarting) return
+
+    setIsStarting(true)
     try {
       const response = await fetch(`${API_BASE}/start-game`, { method: 'POST' })
       const data = await response.json()
@@ -23,7 +41,9 @@ function App() {
       setGuessCount(0)
     } catch (error) {
       console.error('Failed to start game:', error)
-      alert('Failed to connect to server. Make sure the backend is running on localhost:8000')
+      alert('Failed to connect to the backend. If Render is waking up, give it about 50 seconds and try again.')
+    } finally {
+      setIsStarting(false)
     }
   }
 
@@ -67,6 +87,10 @@ function App() {
 
       {showConfetti && <Confetti />}
 
+      <AnimatePresence>
+        {isStarting && <ColdStartOverlay elapsed={startupElapsed} />}
+      </AnimatePresence>
+
       <AnimatePresence mode="wait">
         {gameState === 'menu' && (
           <motion.div
@@ -76,7 +100,7 @@ function App() {
             exit={{ opacity: 0 }}
             className="w-full h-full flex items-center justify-center"
           >
-            <MenuScreen onStart={startNewGame} />
+            <MenuScreen onStart={startNewGame} isStarting={isStarting} />
           </motion.div>
         )}
 
@@ -106,7 +130,7 @@ function App() {
             exit={{ opacity: 0 }}
             className="w-full h-full flex items-center justify-center"
           >
-            <WinScreen onPlayAgain={startNewGame} guessCount={guessCount} />
+            <WinScreen onPlayAgain={startNewGame} guessCount={guessCount} isStarting={isStarting} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -114,7 +138,7 @@ function App() {
   )
 }
 
-function MenuScreen({ onStart }) {
+function MenuScreen({ onStart, isStarting }) {
   return (
     <motion.div
       className="text-center px-6"
@@ -133,6 +157,7 @@ function MenuScreen({ onStart }) {
 
       <motion.button
         onClick={onStart}
+        disabled={isStarting}
         className="relative px-14 py-4 rounded-2xl text-white font-bold text-lg"
         style={{
           background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
@@ -141,7 +166,7 @@ function MenuScreen({ onStart }) {
         whileHover={{ scale: 1.05, boxShadow: '0 12px 40px rgba(99, 102, 241, 0.6)' }}
         whileTap={{ scale: 0.95 }}
       >
-        Play Now
+        {isStarting ? 'Waking Server...' : 'Play Now'}
       </motion.button>
 
       <div className="mt-14 grid grid-cols-1 md:grid-cols-3 gap-5 max-w-xl mx-auto">
@@ -165,7 +190,7 @@ function FeatureCard({ icon, title, desc }) {
   )
 }
 
-function WinScreen({ onPlayAgain, guessCount }) {
+function WinScreen({ onPlayAgain, guessCount, isStarting }) {
   return (
     <motion.div
       className="text-center px-6"
@@ -192,6 +217,7 @@ function WinScreen({ onPlayAgain, guessCount }) {
 
       <motion.button
         onClick={onPlayAgain}
+        disabled={isStarting}
         className="px-12 py-4 rounded-2xl text-white font-bold text-lg"
         style={{
           background: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
@@ -200,8 +226,50 @@ function WinScreen({ onPlayAgain, guessCount }) {
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
       >
-        Play Again
+        {isStarting ? 'Waking Server...' : 'Play Again'}
       </motion.button>
+    </motion.div>
+  )
+}
+
+function ColdStartOverlay({ elapsed }) {
+  const progress = Math.min((elapsed / 50) * 100, 95)
+  const secondsLeft = Math.max(0, 50 - elapsed)
+
+  return (
+    <motion.div
+      className="absolute inset-0 z-50 flex items-center justify-center px-6"
+      style={{ background: 'rgba(5, 10, 24, 0.7)', backdropFilter: 'blur(14px)' }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <motion.div
+        className="glass w-full max-w-md rounded-2xl p-6 text-center"
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <div className="mx-auto mb-5 h-14 w-14 rounded-full border-4 border-white/10 border-t-cyan-400 animate-spin" />
+        <h2 className="text-2xl font-bold mb-2" style={{ color: '#e5e7eb' }}>
+          Waking up the backend
+        </h2>
+        <p className="text-sm mb-5" style={{ color: '#c7d2fe', opacity: 0.9 }}>
+          Render free instances can take up to 50 seconds to start. Keep this tab open while Lexora gets ready.
+        </p>
+
+        <div className="h-2 w-full rounded-full overflow-hidden mb-3" style={{ background: 'rgba(255,255,255,0.08)' }}>
+          <motion.div
+            className="h-full rounded-full"
+            style={{ background: 'linear-gradient(90deg, #6366f1 0%, #06b6d4 100%)' }}
+            animate={{ width: `${progress}%` }}
+          />
+        </div>
+
+        <div className="flex items-center justify-between text-xs" style={{ color: '#a5b4fc' }}>
+          <span>{elapsed}s elapsed</span>
+          <span>{secondsLeft > 0 ? `about ${secondsLeft}s left` : 'almost there'}</span>
+        </div>
+      </motion.div>
     </motion.div>
   )
 }

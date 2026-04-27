@@ -4,6 +4,15 @@ import GuessInput from './GuessInput'
 import GuessHistory from './GuessHistory'
 import SimilarityMeter from './SimilarityMeter'
 
+const STARTER_EXAMPLES = [
+  'water',
+  'house',
+  'plant',
+  'table',
+  'bread',
+  'stone'
+]
+
 export default function GameContainer({ sessionId, gameData, onGuess, onGiveUp, onGameEnd }) {
   const [guesses, setGuesses] = useState([])
   const [loading, setLoading] = useState(false)
@@ -92,6 +101,31 @@ export default function GameContainer({ sessionId, gameData, onGuess, onGiveUp, 
           }}>Lexora</h1>
           <p className="text-sm" style={{ color: '#a5b4fc', opacity: 0.7 }}>{hint}</p>
         </div>
+
+        <motion.div
+          className="glass ml-auto w-full max-w-xs rounded-2xl p-4"
+          initial={{ opacity: 0, x: 16 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.05 }}
+        >
+          <p className="text-[11px] uppercase tracking-[0.18em]" style={{ color: '#06b6d4' }}>
+            Starter Example
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {STARTER_EXAMPLES.map((word) => (
+              <span
+                key={word}
+                className="rounded-full px-3 py-1 text-xs font-semibold capitalize"
+                style={{ background: 'rgba(6, 182, 212, 0.12)', color: '#67e8f9' }}
+              >
+                {word}
+              </span>
+            ))}
+          </div>
+          <p className="mt-3 text-xs leading-5" style={{ color: '#a5b4fc', opacity: 0.82 }}>
+            Try broad everyday nouns first, then follow the warmer ranks.
+          </p>
+        </motion.div>
 
         {/* Input Area */}
         <motion.div
