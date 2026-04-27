@@ -158,4 +158,7 @@ async def get_stats():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+    import os
+    port = int(os.environ.get("PORT", 8000))
+    reload = os.environ.get("ENV") != "production"
+    uvicorn.run(app, host="0.0.0.0", port=port, reload=reload)
